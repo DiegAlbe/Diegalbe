@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COMENSAL — Nutrición, Oficio y Memoria</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          'paper': 'var(--paper)',
+          'paper-light': 'var(--paper-light)',
+          'ink': 'var(--ink)',
+          'ink-soft': 'var(--ink-soft)',
+          'ink-muted': 'var(--ink-muted)',
+          'terracotta': 'var(--terracotta)',
+          'terracotta-light': 'var(--terracotta-light)',
+          'sand': 'var(--sand)',
+          'sand-light': 'var(--sand-light)',
+          'sand-muted': 'var(--sand-muted)',
+        },
+        fontFamily: {
+          'display': ['Cormorant Garamond', 'Georgia', 'serif'],
+          'body': ['Inter', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        }
+      }
+    }
+  }
+</script>
+<style>
+  :root {
+    --paper: #F5F0E8;
+    --paper-light: #FAF7F2;
+    --ink: #2C1F16;
+    --ink-soft: #4A3B2E;
+    --ink-muted: #7A6B5E;
+    --terracotta: #B86B3C;
+    --terracotta-light: #D4916B;
+    --sand: #C4B49A;
+    --sand-light: #DDD4C4;
+    --sand-muted: #E8E0D4;
+    --grain-opacity: 0.035;
+    --shadow-color: rgba(44,31,22,0.08);
+    --shadow-strong: rgba(44,31,22,0.15);
+  }
+  [data-theme="dark"] {
+    --paper: #1A1510;
+    --paper-light: #221C16;
+    --ink: #F5F0E8;
+    --ink-soft: #D4C9B8;
+    --ink-muted: #9A8B7A;
+    --terracotta: #D4916B;
+    --terracotta-light: #E8B89A;
+    --sand: #5A4D3E;
+    --sand-light: #3A3228;
+    --sand-muted: #2A231C;
+    --grain-opacity: 0.06;
+    --shadow-color: rgba(0,0,0,0.3);
+    --shadow-strong: rgba(0,0,0,0.5);
+  }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Inter', sans-serif; background-color: var(--paper); color: var(--ink); overflow-x: hidden; transition: background-color 0.5s ease, color 0.5s ease; }
+  .grain-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; opacity: var(--grain-opacity); background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E"); background-repeat: repeat; background-size: 200px 200px; transition: opacity 0.5s ease; }
+  .reading-progress { position: fixed; top: 0; left: 0; height: 2px; background: linear-gradient(90deg, var(--terracotta), var(--terracotta-light)); z-index: 100; transition: width 0.1s linear; }
+  .cursor-dot { position: fixed; width: 8px; height: 8px; background: var(--terracotta); border-radius: 50%; pointer-events: none; z-index: 9998; transition: transform 0.15s ease, opacity 0.15s ease, background 0.3s ease; mix-blend-mode: difference; opacity: 0; }
+  .cursor-dot.active { opacity: 1; }
+  .cursor-dot.hovering { transform: scale(3); opacity: 0.5; }
+  .reveal { opacity: 0; transform: translateY(40px); transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1); }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+  .reveal-delay-5 { transition-delay: 0.5s; }
+  .nav-link { position: relative; overflow: hidden; }
+  .nav-link::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 1px; background: var(--terracotta); transform: translateX(-101%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+  .nav-link:hover::after { transform: translateX(0); }
+  .article-card { transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); position: relative; overflow: hidden; background: var(--paper-light); border-color: var(--sand-light); }
+  .article-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, transparent 40%, rgba(184,107,60,0.04) 100%); opacity: 0; transition: opacity 0.5s ease; }
+  .article-card:hover::before { opacity: 1; }
+  .article-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px var(--shadow-color), 0 0 0 1px rgba(184,107,60,0.12); }
+  .article-card .card-img { transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+  .article-card:hover .card-img { transform: scale(1.05); }
+  .service-card { transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); position: relative; background: var(--paper); border-color: var(--sand-light); }
+  .service-card::after { content: ''; position: absolute; bottom: 0; left: 50%; width: 0; height: 2px; background: var(--terracotta); transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); transform: translateX(-50%); }
+  .service-card:hover::after { width: 60%; }
+  .service-card:hover { transform: translateY(-6px); box-shadow: 0 16px 32px var(--shadow-color); }
+  .btn-primary { position: relative; overflow: hidden; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); background: var(--ink); color: var(--paper); }
+  .btn-primary::before { content: ''; position: absolute; top: 50%; left: 50%; width: 0; height: 0; background: rgba(255,255,255,0.08); border-radius: 50%; transform: translate(-50%, -50%); transition: width 0.6s ease, height 0.6s ease; }
+  .btn-primary:hover::before { width: 300px; height: 300px; }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px var(--shadow-strong); }
+  .btn-secondary { position: relative; overflow: hidden; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); border-color: var(--ink); color: var(--ink); }
+  .btn-secondary:hover { background: var(--ink); color: var(--paper); transform: translateY(-2px); box-shadow: 0 8px 24px var(--shadow-strong); }
+  .quote-block { position: relative; }
+  .quote-block::before { content: '"'; position: absolute; top: -20px; left: -10px; font-family: 'Cormorant Garamond', serif; font-size: 5rem; color: var(--terracotta); opacity: 0.2; line-height: 1; }
+  .section-number { font-family: 'Cormorant Garamond', serif; font-size: 0.75rem; font-style: italic; color: var(--terracotta); letter-spacing: 2px; }
+  .scroll-mouse { width: 24px; height: 40px; border: 1.5px solid var(--terracotta); border-radius: 12px; position: relative; margin: 0 auto; }
+  .scroll-mouse::before { content: ''; position: absolute; top: 6px; left: 50%; transform: translateX(-50%); width: 4px; height: 8px; background: var(--terracotta); border-radius: 2px; animation: scroll-wheel 2s ease-in-out infinite; }
+  @keyframes scroll-wheel { 0%, 100% { top: 6px; opacity: 1; } 50% { top: 18px; opacity: 0.3; } }
+  .mobile-menu { transform: translateX(100%); transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); background: var(--paper); }
+  .mobile-menu.open { transform: translateX(0); }
+  .filter-pill { transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); position: relative; overflow: hidden; border-color: var(--sand-light); color: var(--ink-soft); }
+  .filter-pill::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--terracotta); transform: scaleX(0); transform-origin: left; transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); z-index: -1; border-radius: inherit; }
+  .filter-pill.active::before { transform: scaleX(1); }
+  .filter-pill.active { color: var(--paper); border-color: var(--terracotta); }
+  .filter-pill:hover:not(.active) { border-color: var(--terracotta); color: var(--terracotta); }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--terracotta); box-shadow: 0 0 0 3px rgba(184,107,60,0.12); }
+  input, textarea, select { background: var(--paper); border-color: var(--sand-light); color: var(--ink); transition: all 0.3s ease; }
+  input::placeholder, textarea::placeholder { color: var(--ink-muted); opacity: 0.6; }
+  .stagger-children > * { opacity: 0; transform: translateY(20px); }
+  .stagger-children.visible > *:nth-child(1) { animation: stagger-in 0.6s 0.1s forwards cubic-bezier(0.16, 1, 0.3, 1); }
+  .stagger-children.visible > *:nth-child(2) { animation: stagger-in 0.6s 0.2s forwards cubic-bezier(0.16, 1, 0.3, 1); }
+  .stagger-children.visible > *:nth-child(3) { animation: stagger-in 0.6s 0.3s forwards cubic-bezier(0.16, 1, 0.3, 1); }
+  .stagger-children.visible > *:nth-child(4) { animation: stagger-in 0.6s 0.4s forwards cubic-bezier(0.16, 1, 0.3, 1); }
+  .stagger-children.visible > *:nth-child(5) { animation: stagger-in 0.6s 0.5s forwards cubic-bezier(0.16, 1, 0.3, 1); }
+  .stagger-children.visible > *:nth-child(6) { animation: stagger-in 0.6s 0.6s forwards cubic-bezier(0.16, 1, 0.3, 1); }
+  @keyframes stagger-in { to { opacity: 1; transform: translateY(0); } }
+  .link-animated { background: linear-gradient(90deg, var(--terracotta), var(--terracotta)); background-size: 0% 1px; background-position: left bottom; background-repeat: no-repeat; transition: background-size 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+  .link-animated:hover { background-size: 100% 1px; }
+  .section-sep { height: 1px; background: linear-gradient(90deg, transparent, var(--sand-light), transparent); }
+  .theme-toggle { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--sand-light); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; color: var(--ink-soft); }
+  .theme-toggle:hover { border-color: var(--terracotta); color: var(--terracotta); transform: rotate(15deg); }
+  body::-webkit-scrollbar { width: 6px; }
+  body::-webkit-scrollbar-track { background: transparent; }
+  body::-webkit-scrollbar-thumb { background: var(--sand); border-radius: 3px; }
+  body::-webkit-scrollbar-thumb:hover { background: var(--terracotta); }
+  .toast { background: var(--ink); color: var(--paper); }
+  @media (max-width: 768px) { .cursor-dot { display: none; } }
+</style>
+<base target="_blank">
+</head>
+<body>
+
+<div class="grain-overlay"></div>
+<div class="reading-progress" id="readingProgress"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<!-- HEADER -->
+<header id="header" class="fixed top-0 left-0 right-0 z-50 transition-all duration-500" style="background: rgba(245,240,232,0.92); backdrop-filter: blur(16px) saturate(1.2);">
+  <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+    <a href="#inicio" class="flex flex-col group">
+      <span class="font-display italic text-xl font-semibold leading-none tracking-tight group-hover:text-terracotta transition-colors duration-300" style="color: var(--ink);">COMENSAL</span>
+      <span class="font-body text-[0.55rem] uppercase tracking-[4px] mt-0.5" style="color: var(--ink-muted);">Nutrición, Oficio y Memoria</span>
+    </a>
+    <div class="flex items-center gap-6">
+      <nav class="hidden md:flex items-center gap-10">
+        <a href="#escritos" class="nav-link font-body text-[0.7rem] uppercase tracking-[2.5px] py-1 transition-colors duration-300" style="color: var(--ink-soft);">Escritos</a>
+        <a href="#sobre" class="nav-link font-body text-[0.7rem] uppercase tracking-[2.5px] py-1 transition-colors duration-300" style="color: var(--ink-soft);">Sobre</a>
+        <a href="#servicios" class="nav-link font-body text-[0.7rem] uppercase tracking-[2.5px] py-1 transition-colors duration-300" style="color: var(--ink-soft);">Servicios</a>
+        <a href="#contacto" class="nav-link font-body text-[0.7rem] uppercase tracking-[2.5px] py-1 transition-colors duration-300" style="color: var(--ink-soft);">Contacto</a>
+      </nav>
+      <button id="themeToggle" class="theme-toggle" aria-label="Cambiar tema">
+        <svg id="sunIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/></svg>
+        <svg id="moonIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button id="menuBtn" class="md:hidden p-2 group" aria-label="Menú">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="group-hover:stroke-terracotta transition-colors" style="color: var(--ink);"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Mobile Menu -->
+<div id="mobileMenu" class="mobile-menu fixed inset-0 z-40 flex flex-col items-center justify-center gap-10 md:hidden">
+  <button id="closeMenu" class="absolute top-5 right-6 p-2 group" aria-label="Cerrar">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="group-hover:stroke-terracotta transition-colors" style="color: var(--ink);"><line x1="4" y1="4" x2="20" y2="20"/><line x1="20" y1="4" x2="4" y2="20"/></svg>
+  </button>
+  <a href="#escritos" class="mobile-link font-display italic text-3xl hover:text-terracotta transition-colors duration-300" style="color: var(--ink);">Escritos</a>
+  <a href="#sobre" class="mobile-link font-display italic text-3xl hover:text-terracotta transition-colors duration-300" style="color: var(--ink);">Sobre</a>
+  <a href="#servicios" class="mobile-link font-display italic text-3xl hover:text-terracotta transition-colors duration-300" style="color: var(--ink);">Servicios</a>
+  <a href="#contacto" class="mobile-link font-display italic text-3xl hover:text-terracotta transition-colors duration-300" style="color: var(--ink);">Contacto</a>
+</div>
+
+<!-- HERO -->
+<section id="inicio" class="min-h-screen flex flex-col items-center justify-center text-center px-6 pt-16 relative overflow-hidden">
+  <div class="absolute top-1/4 left-8 w-px h-32 bg-gradient-to-b from-transparent via-sand to-transparent opacity-40 hidden lg:block"></div>
+  <div class="absolute bottom-1/4 right-12 w-px h-40 bg-gradient-to-b from-transparent via-sand to-transparent opacity-40 hidden lg:block"></div>
+  <div class="reveal max-w-3xl relative z-10">
+    <p class="font-body text-[0.6rem] uppercase tracking-[5px] mb-8 reveal-delay-1" style="color: var(--terracotta);">Plataforma de resistencia cultural</p>
+    <h1 class="font-display italic text-3xl md:text-5xl lg:text-6xl leading-[1.3] md:leading-[1.25] mb-10 reveal-delay-2" style="color: var(--ink);">
+      "La mesa no es solo<br class="hidden md:block"> donde se come.<br class="hidden md:block">
+      Es donde se negocia<br class="hidden md:block"> la cultura,<br class="hidden md:block">
+      se transmite la memoria<br class="hidden md:block">
+      <span style="color: var(--terracotta);">y se ejerce la soberanía."</span>
+    </h1>
+    <div class="w-16 h-px bg-gradient-to-r from-transparent via-terracotta to-transparent mx-auto mb-10 reveal-delay-3"></div>
+    <p class="font-body text-sm md:text-base max-w-lg mx-auto leading-[1.8] mb-12 reveal-delay-3" style="color: var(--ink-muted);">
+      No se trata solo de comer bien. Se trata de no comer solos. De preguntarnos no solo qué comemos, sino cómo, dónde y con quién.
+    </p>
+    <div class="flex flex-col sm:flex-row gap-4 justify-center items-center reveal-delay-4">
+      <a href="#escritos" class="btn-primary font-body text-[0.7rem] uppercase tracking-[2.5px] px-10 py-4 rounded-full inline-block relative z-10">Leer los Escritos</a>
+      <a href="#servicios" class="btn-secondary font-body text-[0.7rem] uppercase tracking-[2.5px] px-10 py-4 rounded-full inline-block">Conocer los Servicios</a>
+    </div>
+  </div>
+  <div class="absolute bottom-12 left-1/2 -translate-x-1/2 reveal-delay-5">
+    <div class="scroll-mouse"></div>
+  </div>
+</section>
+
+<div class="section-sep max-w-xs mx-auto"></div>
+
+<!-- ESCRITOS -->
+<section id="escritos" class="py-24 md:py-40 px-6 relative">
+  <div class="max-w-5xl mx-auto">
+    <div class="reveal text-center mb-16">
+      <div class="section-number mb-4">01 — Escritos</div>
+      <h2 class="font-display italic text-4xl md:text-5xl lg:text-6xl mb-5 leading-tight" style="color: var(--ink);">Escritos</h2>
+      <div class="w-12 h-px bg-gradient-to-r from-transparent via-terracotta to-transparent mx-auto mb-6"></div>
+      <p class="font-body text-sm max-w-lg mx-auto leading-[1.8]" style="color: var(--ink-muted);">Textos que no buscan respuestas, solo buenas preguntas para compartir a la mesa.</p>
+    </div>
+    <div class="reveal flex flex-wrap justify-center gap-3 mb-16 stagger-children" id="filterContainer">
+      <button class="filter-pill active font-body text-[0.65rem] uppercase tracking-[1.5px] px-5 py-2.5 rounded-full border cursor-pointer relative z-10">Todos</button>
+      <button class="filter-pill font-body text-[0.65rem] uppercase tracking-[1.5px] px-5 py-2.5 rounded-full border cursor-pointer relative z-10">Comensalidad</button>
+      <button class="filter-pill font-body text-[0.65rem] uppercase tracking-[1.5px] px-5 py-2.5 rounded-full border cursor-pointer relative z-10">Memoria</button>
+      <button class="filter-pill font-body text-[0.65rem] uppercase tracking-[1.5px] px-5 py-2.5 rounded-full border cursor-pointer relative z-10">Narrativa</button>
+      <button class="filter-pill font-body text-[0.65rem] uppercase tracking-[1.5px] px-5 py-2.5 rounded-full border cursor-pointer relative z-10">Educación</button>
+      <button class="filter-pill font-body text-[0.65rem] uppercase tracking-[1.5px] px-5 py-2.5 rounded-full border cursor-pointer relative z-10">Poesía</button>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <article class="reveal article-card rounded-xl border p-6 flex gap-5 cursor-pointer group">
+        <div class="w-24 h-24 md:w-28 md:h-28 rounded-lg flex-shrink-0 flex items-center justify-center text-3xl overflow-hidden relative" style="background: var(--sand-muted);"><span class="card-img block">🪑</span></div>
+        <div class="flex flex-col justify-center flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-2"><span class="font-body text-[0.6rem] uppercase tracking-[1.5px]" style="color: var(--terracotta);">Comensalidad</span><span class="w-1 h-1 rounded-full" style="background: var(--sand);"></span><span class="font-body text-[0.6rem]" style="color: var(--ink-muted);">8 min</span></div>
+          <h3 class="font-display text-xl md:text-2xl font-medium leading-snug mb-2 group-hover:text-terracotta transition-colors duration-300" style="color: var(--ink);">La mesa vacía</h3>
+          <p class="font-body text-xs leading-[1.7] line-clamp-2 mb-3" style="color: var(--ink-muted);">Una madre llega apurada a su casa para preparar un almuerzo. Lo comerán, a medida que cada uno vaya llegando, sentados solos frente a una pantalla. ¿Por qué esta escena nos parece cotidiana y nadie habla de esto?</p>
+          <span class="font-body text-[0.7rem] link-animated inline-block self-start" style="color: var(--terracotta);">Leer completo →</span>
+        </div>
+      </article>
+      <article class="reveal article-card rounded-xl border p-6 flex gap-5 cursor-pointer group">
+        <div class="w-24 h-24 md:w-28 md:h-28 rounded-lg flex-shrink-0 flex items-center justify-center text-3xl overflow-hidden relative" style="background: var(--sand-muted);"><span class="card-img block">📱</span></div>
+        <div class="flex flex-col justify-center flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-2"><span class="font-body text-[0.6rem] uppercase tracking-[1.5px]" style="color: var(--terracotta);">Comensalidad</span><span class="w-1 h-1 rounded-full" style="background: var(--sand);"></span><span class="font-body text-[0.6rem]" style="color: var(--ink-muted);">6 min</span></div>
+          <h3 class="font-display text-xl md:text-2xl font-medium leading-snug mb-2 group-hover:text-terracotta transition-colors duration-300" style="color: var(--ink);">La primera imagen del día</h3>
+          <p class="font-body text-xs leading-[1.7] line-clamp-2 mb-3" style="color: var(--ink-muted);">Despertar y tener el celular en la mesa de luz. En esta tiranía de las pantallas se nos pasa la vida. Sacar las pantallas del medio y poner las mesas: esa es la revolución más pequeña y más necesaria.</p>
+          <span class="font-body text-[0.7rem] link-animated inline-block self-start" style="color: var(--terracotta);">Leer completo →</span>
+        </div>
+      </article>
+      <article class="reveal article-card rounded-xl border p-6 flex gap-5 cursor-pointer group">
+        <div class="w-24 h-24 md:w-28 md:h-28 rounded-lg flex-shrink-0 flex items-center justify-center text-3xl overflow-hidden relative" style="background: var(--sand-muted);"><span class="card-img block">📖</span></div>
+        <div class="flex flex-col justify-center flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-2"><span class="font-body text-[0.6rem] uppercase tracking-[1.5px]" style="color: var(--terracotta);">Memoria</span><span class="w-1 h-1 rounded-full" style="background: var(--sand);"></span><span class="font-body text-[0.6rem]" style="color: var(--ink-muted);">10 min</span></div>
+          <h3 class="font-display text-xl md:text-2xl font-medium leading-snug mb-2 group-hover:text-terracotta transition-colors duration-300" style="color: var(--ink);">La herencia más valiosa</h3>
+          <p class="font-body text-xs leading-[1.7] line-clamp-2 mb-3" style="color: var(--ink-muted);">No ha de haber herencia más valiosa que un cuaderno escrito a mano con alguna receta. ¿Qué pasará con las recetas de nuestros ancestros cuando nadie las haga?</p>
+          <span class="font-body text-[0.7rem] link-animated inline-block self-start" style="color: var(--terracotta);">Leer completo →</span>
+        </div>
+      </article>
+      <article class="reveal article-card rounded-xl border p-6 flex gap-5 cursor-pointer group">
+        <div class="w-24 h-24 md:w-28 md:h-28 rounded-lg flex-shrink-0 flex items-center justify-center text-3xl overflow-hidden relative" style="background: var(--sand-muted);"><span class="card-img block">⚙️</span></div>
+        <div class="flex flex-col justify-center flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-2"><span class="font-body text-[0.6rem] uppercase tracking-[1.5px]" style="color: var(--terracotta);">Narrativa</span><span class="w-1 h-1 rounded-full" style="background: var(--sand);"></span><span class="font-body text-[0.6rem]" style="color: var(--ink-muted);">7 min</span></div>
+          <h3 class="font-display text-xl md:text-2xl font-medium leading-snug mb-2 group-hover:text-terracotta transition-colors duration-300" style="color: var(--ink);">El algoritmo y la ruedita</h3>
+          <p class="font-body text-xs leading-[1.7] line-clamp-2 mb-3" style="color: var(--ink-muted);">Los algoritmos nos conocen más que nuestro propio entorno. Nos muestran todo lo que queremos ver sin dejarnos lugar para la duda. Saquemos afuera lo que nos pasa.</p>
+          <span class="font-body text-[0.7rem] link-animated inline-block self-start" style="color: var(--terracotta);">Leer completo →</span>
+        </div>
+      </article>
+      <article class="reveal article-card md:col-span-2 rounded-xl border p-8 flex flex-col md:flex-row gap-8 cursor-pointer group">
+        <div class="w-full md:w-48 h-40 md:h-auto rounded-lg flex-shrink-0 flex items-center justify-center text-5xl overflow-hidden relative" style="background: var(--sand-muted);"><span class="card-img block">✍️</span></div>
+        <div class="flex flex-col justify-center flex-1">
+          <div class="flex items-center gap-2 mb-3 flex-wrap"><span class="font-body text-[0.6rem] uppercase tracking-[1.5px]" style="color: var(--terracotta);">Educación</span><span class="w-1 h-1 rounded-full" style="background: var(--sand);"></span><span class="font-body text-[0.6rem] uppercase tracking-[1.5px]" style="color: var(--terracotta);">Ensayo</span><span class="w-1 h-1 rounded-full" style="background: var(--sand);"></span><span class="font-body text-[0.6rem]" style="color: var(--ink-muted);">12 min</span><span class="ml-auto font-body text-[0.6rem] uppercase tracking-[1px] px-2 py-0.5 rounded-full" style="color: var(--terracotta); background: rgba(184,107,60,0.12);">Destacado</span></div>
+          <h3 class="font-display text-2xl md:text-3xl font-medium leading-tight mb-4 group-hover:text-terracotta transition-colors duration-300" style="color: var(--ink);">Educación, creatividad y pensamiento crítico</h3>
+          <p class="font-body text-sm leading-[1.8] mb-4 max-w-2xl" style="color: var(--ink-soft);">¿Para qué enseñamos? ¿Para replicar contenidos en otras generaciones? ¿Para crear conocimientos nuevos? ¿O para crear ciudadanos críticos? Un ensayo sobre el arte en el aula, la responsabilidad del saber y por qué debemos salir de la lógica que le han impreso las redes sociales a la discusión actual.</p>
+          <span class="font-body text-[0.75rem] link-animated inline-block self-start" style="color: var(--terracotta);">Leer ensayo completo →</span>
+        </div>
+      </article>
+      <article class="reveal article-card rounded-xl border p-6 flex gap-5 cursor-pointer group">
+        <div class="w-24 h-24 md:w-28 md:h-28 rounded-lg flex-shrink-0 flex items-center justify-center text-3xl overflow-hidden relative" style="background: var(--sand-muted);"><span class="card-img block">🤝</span></div>
+        <div class="flex flex-col justify-center flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-2"><span class="font-body text-[0.6rem] uppercase tracking-[1.5px]" style="color: var(--terracotta);">Poesía</span><span class="w-1 h-1 rounded-full" style="background: var(--sand);"></span><span class="font-body text-[0.6rem]" style="color: var(--ink-muted);">2 min</span></div>
+          <h3 class="font-display text-xl md:text-2xl font-medium leading-snug mb-2 group-hover:text-terracotta transition-colors duration-300" style="color: var(--ink);">Coincidir</h3>
+          <p class="font-body text-xs leading-[1.7] line-clamp-2 mb-3" style="color: var(--ink-muted);">Coincidir, encontrarse, mirarse a los ojos y ver que ahí hay un otro con quien... Al igual que cuando se cocina y el ingrediente principal es el amor.</p>
+          <span class="font-body text-[0.7rem] link-animated inline-block self-start" style="color: var(--terracotta);">Leer completo →</span>
+        </div>
+      </article>
+      <article class="reveal article-card rounded-xl border p-6 flex gap-5 cursor-pointer group">
+        <div class="w-24 h-24 md:w-28 md:h-28 rounded-lg flex-shrink-0 flex items-center justify-center text-3xl overflow-hidden relative" style="background: var(--sand-muted);"><span class="card-img block">🧬</span></div>
+        <div class="flex flex-col justify-center flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-2"><span class="font-body text-[0.6rem] uppercase tracking-[1.5px]" style="color: var(--terracotta);">Comensalidad</span><span class="w-1 h-1 rounded-full" style="background: var(--sand);"></span><span class="font-body text-[0.6rem]" style="color: var(--ink-muted);">9 min</span></div>
+          <h3 class="font-display text-xl md:text-2xl font-medium leading-snug mb-2 group-hover:text-terracotta transition-colors duration-300" style="color: var(--ink);">Contra la tiranía del instante</h3>
+          <p class="font-body text-xs leading-[1.7] line-clamp-2 mb-3" style="color: var(--ink-muted);">En estos tiempos donde todo es "ya" y nada merece el tiempo necesario, propongo que nos tomemos una pausa. Resignifiquemos las manos de nuestras madres y abuelas.</p>
+          <span class="font-body text-[0.7rem] link-animated inline-block self-start" style="color: var(--terracotta);">Leer completo →</span>
+        </div>
+      </article>
+    </div>
+    <div class="reveal mt-20 rounded-2xl p-10 md:p-16 text-center border relative overflow-hidden" style="background: linear-gradient(135deg, var(--sand-muted) 0%, var(--paper-light) 100%); border-color: var(--sand-light);">
+      <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-terracotta to-transparent opacity-30"></div>
+      <div class="text-4xl mb-6">🍲</div>
+      <h3 class="font-display italic text-2xl md:text-3xl mb-4" style="color: var(--ink);">¿Tenés un texto con historia?</h3>
+      <p class="font-body text-sm max-w-md mx-auto leading-[1.8] mb-8" style="color: var(--ink-muted);">Esta bitácora es un espacio vivo. Si tenés una receta con memoria, una reflexión sobre la mesa o simplemente querés sentarte a escribir con nosotros, la puerta está abierta. El banco es colaborativo.</p>
+      <a href="#contacto" class="btn-primary font-body text-[0.7rem] uppercase tracking-[2.5px] px-10 py-4 rounded-full inline-block relative z-10">Colaborar con un escrito</a>
+    </div>
+  </div>
+</section>
+
+<div class="section-sep max-w-xs mx-auto"></div>
+
+<!-- SERVICIOS -->
+<section id="servicios" class="py-24 md:py-40 px-6 relative" style="background: var(--paper-light);">
+  <div class="max-w-5xl mx-auto">
+    <div class="reveal text-center mb-20">
+      <div class="section-number mb-4">02 — Servicios</div>
+      <h2 class="font-display italic text-4xl md:text-5xl lg:text-6xl mb-5 leading-tight" style="color: var(--ink);">Servicios</h2>
+      <div class="w-12 h-px bg-gradient-to-r from-transparent via-terracotta to-transparent mx-auto mb-6"></div>
+      <p class="font-body text-sm max-w-lg mx-auto leading-[1.8]" style="color: var(--ink-muted);">Propuestas de educación alimentaria adaptadas a cada contexto. No vendemos planes: construimos herramientas.</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="reveal service-card rounded-xl border p-10 text-center group">
+        <div class="text-5xl mb-6 transform group-hover:scale-110 transition-transform duration-500">👤</div>
+        <div class="font-body text-[0.6rem] uppercase tracking-[3px] mb-4" style="color: var(--terracotta);">Individual</div>
+        <h3 class="font-display text-2xl font-medium mb-4 leading-snug" style="color: var(--ink);">Consultoría y Acompañamiento</h3>
+        <p class="font-body text-sm leading-[1.8] mb-6" style="color: var(--ink-soft);">Encuentros personalizados para resignificar tu relación con la comida. Sin dietas, sin culpas. Solo preguntas que importan.</p>
+        <a href="#contacto" class="font-body text-[0.7rem] link-animated inline-block" style="color: var(--terracotta);">Coordinar un encuentro →</a>
+      </div>
+      <div class="reveal service-card rounded-xl border p-10 text-center group">
+        <div class="text-5xl mb-6 transform group-hover:scale-110 transition-transform duration-500">👥</div>
+        <div class="font-body text-[0.6rem] uppercase tracking-[3px] mb-4" style="color: var(--terracotta);">Grupal</div>
+        <h3 class="font-display text-2xl font-medium mb-4 leading-snug" style="color: var(--ink);">Talleres y Encuentros Colectivos</h3>
+        <p class="font-body text-sm leading-[1.8] mb-6" style="color: var(--ink-soft);">Dinámicas presenciales para grupos. Desde el Scanner de Humo hasta el Banquete Político. Aprender en comunidad es resistir.</p>
+        <a href="#contacto" class="font-body text-[0.7rem] link-animated inline-block" style="color: var(--terracotta);">Ver próximos talleres →</a>
+      </div>
+      <div class="reveal service-card rounded-xl border p-10 text-center group">
+        <div class="text-5xl mb-6 transform group-hover:scale-110 transition-transform duration-500">🏛️</div>
+        <div class="font-body text-[0.6rem] uppercase tracking-[3px] mb-4" style="color: var(--terracotta);">Institucional</div>
+        <h3 class="font-display text-2xl font-medium mb-4 leading-snug" style="color: var(--ink);">Capacitación y Asesoramiento</h3>
+        <p class="font-body text-sm leading-[1.8] mb-6" style="color: var(--ink-soft);">Charlas y programas para escuelas, cooperativas y organizaciones. Adaptamos el mensaje al territorio y a la audiencia.</p>
+        <a href="#contacto" class="font-body text-[0.7rem] link-animated inline-block" style="color: var(--terracotta);">Consultar para mi institución →</a>
+      </div>
+    </div>
+    <div class="reveal mt-16 rounded-2xl p-10 md:p-14 text-center border relative overflow-hidden" style="background: linear-gradient(135deg, var(--sand-muted) 0%, var(--paper) 100%); border-color: var(--sand-light);">
+      <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-terracotta to-transparent opacity-30"></div>
+      <p class="font-display italic text-xl md:text-2xl mb-8 leading-relaxed" style="color: var(--ink);">¿Tu institución quiere hacer algo distinto con la alimentación?</p>
+      <a href="#contacto" class="btn-primary font-body text-[0.7rem] uppercase tracking-[2.5px] px-10 py-4 rounded-full inline-block relative z-10">Escribinos ahora</a>
+    </div>
+  </div>
+</section>
+
+<div class="section-sep max-w-xs mx-auto"></div>
+
+<!-- SOBRE -->
+<section id="sobre" class="py-24 md:py-40 px-6 relative">
+  <div class="max-w-5xl mx-auto">
+    <div class="reveal flex flex-col md:flex-row gap-16 md:gap-20 items-start">
+      <div class="flex-1">
+        <div class="section-number mb-4">03 — Sobre</div>
+        <h2 class="font-display italic text-4xl md:text-5xl lg:text-6xl mb-10 leading-tight" style="color: var(--ink);">Sobre COMENSAL</h2>
+        <blockquote class="quote-block pl-6 mb-10 relative">
+          <p class="font-display italic text-lg md:text-xl leading-[1.7]" style="color: var(--ink-soft);">No hay acto más íntimo y más político que elegir qué ponemos en el cuerpo. Y sin embargo, esa elección nos la hicieron creer libre.</p>
+        </blockquote>
+        <p class="font-body text-sm md:text-base leading-[1.9] mb-6" style="color: var(--ink-soft);">
+          COMENSAL nace de la síntesis entre la Nutrición Clínica, el Oficio Gastronómico y la Memoria Histórica. Entendemos que el problema alimentario no es médico: es cultural. No se resuelve con más información; se resuelve recuperando el vínculo entre el cuerpo, el territorio y la comunidad.
+        </p>
+        <p class="font-body text-sm md:text-base leading-[1.9] mb-6" style="color: var(--ink-soft);">
+          Me gusta reconocer a nuestras madres y abuelas como las <em class="font-display italic" style="color: var(--terracotta);">nutricionistas de antaño</em>. Por su rol, sus saberes y su incansable labor. Dicha tarea no se estudiaba: se aprendía compartiendo tiempo, mirando las manos, reconociendo los utensilios que se convertirían en aliados al momento de cocinar.
+        </p>
+        <p class="font-body text-sm md:text-base leading-[1.9]" style="color: var(--ink-soft);">
+          Esta bitácora es un espacio vivo. Cada artículo es una invitación a sentarse a la mesa con preguntas, no con respuestas. Porque la nutrición como vínculo social, el oficio como dignidad y la memoria como brújula — eso es lo que defendemos.
+        </p>
+      </div>
+      <div class="md:w-72 flex-shrink-0 md:sticky md:top-24">
+        <div class="rounded-xl border p-10 text-center relative overflow-hidden" style="background: var(--paper-light); border-color: var(--sand-light);">
+          <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-terracotta to-transparent opacity-30"></div>
+          <div class="w-24 h-24 rounded-full mx-auto mb-6 flex items-center justify-center text-4xl" style="background: var(--sand-muted);">🧉</div>
+          <div class="font-display text-lg font-semibold mb-1" style="color: var(--ink);">Diego Albeira</div>
+          <div class="font-body text-[0.65rem] tracking-[2px] uppercase mb-4" style="color: var(--ink-muted);">Lic. en Nutrición Mat. CONUER 455</div>
+          <div class="w-10 h-px bg-gradient-to-r from-transparent via-sand to-transparent mx-auto mb-4"></div>
+          <p class="font-display italic text-sm leading-relaxed" style="color: var(--ink-muted);">"Cocinar hizo al hombre, y la comensalidad nos hizo sociales."<br><span class="font-body text-[0.65rem] not-italic mt-2 block">— Faustino Cordón</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-sep max-w-xs mx-auto"></div>
+
+<!-- CONTACTO -->
+<section id="contacto" class="py-24 md:py-40 px-6 relative" style="background: var(--paper-light);">
+  <div class="max-w-5xl mx-auto">
+    <div class="reveal flex flex-col md:flex-row gap-16 md:gap-20">
+      <div class="flex-1">
+        <div class="section-number mb-4">04 — Contacto</div>
+        <h2 class="font-display italic text-4xl md:text-5xl mb-4 leading-tight" style="color: var(--ink);">Hablemos</h2>
+        <p class="font-body text-sm mb-10 leading-[1.8] max-w-md" style="color: var(--ink-muted);">¿Querés coordinar un taller, una charla o simplemente sentarte a conversar? La mesa está servida.</p>
+        <form class="space-y-5" onsubmit="event.preventDefault(); showToast('Mensaje enviado. Gracias por escribir.');">
+          <div class="reveal"><input type="text" placeholder="Nombre" required class="w-full px-5 py-4 rounded-xl font-body text-sm placeholder-opacity-60 transition-all border"></div>
+          <div class="reveal"><input type="email" placeholder="Email" required class="w-full px-5 py-4 rounded-xl font-body text-sm placeholder-opacity-60 transition-all border"></div>
+          <div class="reveal">
+            <select class="w-full px-5 py-4 rounded-xl font-body text-sm transition-all cursor-pointer appearance-none border opacity-80">
+              <option value="" disabled selected>¿Sobre qué querés hablar?</option>
+              <option value="individual">Consulta individual</option>
+              <option value="grupal">Taller o encuentro grupal</option>
+              <option value="institucional">Propuesta institucional</option>
+              <option value="colaboracion">Colaborar con un escrito</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+          <div class="reveal"><textarea placeholder="Tu mensaje..." rows="5" required class="w-full px-5 py-4 rounded-xl font-body text-sm placeholder-opacity-60 transition-all resize-none border"></textarea></div>
+          <div class="reveal pt-2"><button type="submit" class="btn-primary font-body text-[0.7rem] uppercase tracking-[2.5px] px-10 py-4 rounded-full relative z-10">Enviar mensaje</button></div>
+        </form>
+      </div>
+      <div class="md:w-80 flex-shrink-0">
+        <div class="rounded-2xl p-10 h-full border relative overflow-hidden" style="background: linear-gradient(135deg, var(--sand-muted) 0%, var(--paper) 100%); border-color: var(--sand-light);">
+          <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-terracotta to-transparent opacity-30"></div>
+          <div class="font-body text-[0.6rem] uppercase tracking-[3px] mb-10" style="color: var(--terracotta);">Canales Directos</div>
+          <div class="mb-10 group cursor-pointer">
+            <div class="flex items-center gap-3 mb-2"><span class="text-xl">💬</span><div class="font-body text-sm font-medium" style="color: var(--ink);">WhatsApp</div></div>
+            <p class="font-body text-xs leading-[1.7] mb-2 pl-9" style="color: var(--ink-muted);">Escritura directa, respuesta en el día.</p>
+            <a href="https://wa.me/5491111111111" target="_blank" class="font-body text-xs link-animated inline-block pl-9" style="color: var(--terracotta);">Abrir chat →</a>
+          </div>
+          <div class="mb-10 group cursor-pointer">
+            <div class="flex items-center gap-3 mb-2"><span class="text-xl">✉️</span><div class="font-body text-sm font-medium" style="color: var(--ink);">Email</div></div>
+            <p class="font-body text-xs leading-[1.7] mb-2 pl-9" style="color: var(--ink-muted);">Para propuestas institucionales y colaboraciones.</p>
+            <a href="mailto:hola@comensal.ar" class="font-body text-xs link-animated inline-block pl-9" style="color: var(--terracotta);">hola@comensal.ar →</a>
+          </div>
+          <div class="group cursor-pointer">
+            <div class="flex items-center gap-3 mb-2"><span class="text-xl">📷</span><div class="font-body text-sm font-medium" style="color: var(--ink);">Instagram</div></div>
+            <p class="font-body text-xs leading-[1.7] mb-2 pl-9" style="color: var(--ink-muted);">El día a día de la bitácora.</p>
+            <a href="https://instagram.com/comensal.ar" target="_blank" class="font-body text-xs link-animated inline-block pl-9" style="color: var(--terracotta);">@comensal.ar →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="py-16 px-6 text-center relative">
+  <div class="max-w-5xl mx-auto">
+    <div class="w-16 h-px bg-gradient-to-r from-transparent via-sand to-transparent mx-auto mb-8"></div>
+    <div class="font-display italic text-2xl mb-2" style="color: var(--ink);">COMENSAL</div>
+    <div class="font-body text-[0.6rem] uppercase tracking-[4px] mb-6" style="color: var(--ink-muted);">Nutrición · Oficio · Memoria</div>
+    <div class="w-8 h-px bg-gradient-to-r from-transparent via-sand to-transparent mx-auto mb-6"></div>
+    <div class="font-body text-xs mb-3" style="color: var(--ink-muted); opacity: 0.7;">© 2026 · Buenos Aires, Argentina</div>
+    <div class="font-display italic text-sm" style="color: var(--terracotta); opacity: 0.8;">"La mesa está servida."</div>
+  </div>
+</footer>
+
+<!-- Toast -->
+<div id="toast" class="toast fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full font-body text-sm opacity-0 pointer-events-none transition-all duration-500 z-50 transform translate-y-4">
+  <span id="toastText"></span>
+</div>
+
+<script>
+  // Theme Toggle
+  const themeToggle = document.getElementById('themeToggle');
+  const sunIcon = document.getElementById('sunIcon');
+  const moonIcon = document.getElementById('moonIcon');
+  const html = document.documentElement;
+  const savedTheme = localStorage.getItem('comensal-theme');
+  const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (savedTheme === 'dark' || (!savedTheme && systemDark)) {
+    html.setAttribute('data-theme', 'dark');
+    sunIcon.style.display = 'none';
+    moonIcon.style.display = 'block';
+  }
+  themeToggle.addEventListener('click', () => {
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    if (isDark) {
+      html.removeAttribute('data-theme');
+      localStorage.setItem('comensal-theme', 'light');
+      sunIcon.style.display = 'block';
+      moonIcon.style.display = 'none';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      localStorage.setItem('comensal-theme', 'dark');
+      sunIcon.style.display = 'none';
+      moonIcon.style.display = 'block';
+    }
+  });
+
+  // Reading progress
+  window.addEventListener('scroll', () => {
+    const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+    const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    document.getElementById('readingProgress').style.width = (scrollTop / scrollHeight) * 100 + '%';
+  });
+
+  // Custom cursor
+  const cursorDot = document.getElementById('cursorDot');
+  let mouseX = 0, mouseY = 0, cursorX = 0, cursorY = 0;
+  document.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; cursorDot.classList.add('active'); });
+  document.addEventListener('mouseleave', () => { cursorDot.classList.remove('active'); });
+  function animateCursor() {
+    cursorX += (mouseX - cursorX) * 0.15;
+    cursorY += (mouseY - cursorY) * 0.15;
+    cursorDot.style.left = cursorX - 4 + 'px';
+    cursorDot.style.top = cursorY - 4 + 'px';
+    requestAnimationFrame(animateCursor);
+  }
+  animateCursor();
+  document.querySelectorAll('a, button, .article-card, .service-card').forEach(el => {
+    el.addEventListener('mouseenter', () => cursorDot.classList.add('hovering'));
+    el.addEventListener('mouseleave', () => cursorDot.classList.remove('hovering'));
+  });
+
+  // Scroll Reveal
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        if (entry.target.classList.contains('stagger-children')) entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.08, rootMargin: '0px 0px -50px 0px' });
+  document.querySelectorAll('.reveal, .stagger-children').forEach(el => revealObserver.observe(el));
+
+  // Header shadow
+  const header = document.getElementById('header');
+  window.addEventListener('scroll', () => {
+    header.style.boxShadow = window.scrollY > 50 ? '0 4px 30px var(--shadow-color)' : 'none';
+  });
+
+  // Mobile Menu
+  const menuBtn = document.getElementById('menuBtn');
+  const closeMenu = document.getElementById('closeMenu');
+  const mobileMenu = document.getElementById('mobileMenu');
+  menuBtn.addEventListener('click', () => mobileMenu.classList.add('open'));
+  closeMenu.addEventListener('click', () => mobileMenu.classList.remove('open'));
+  document.querySelectorAll('.mobile-link').forEach(link => link.addEventListener('click', () => mobileMenu.classList.remove('open')));
+
+  // Filter pills
+  document.querySelectorAll('.filter-pill').forEach(pill => {
+    pill.addEventListener('click', function() {
+      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+
+  // Toast
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toastText').textContent = message;
+    toast.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+    toast.classList.add('opacity-100', 'translate-y-0');
+    setTimeout(() => {
+      toast.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+      toast.classList.remove('opacity-100', 'translate-y-0');
+    }, 3000);
+  }
+
+  // Smooth scroll
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>
