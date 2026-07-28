@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>COMENSAL — Nutrición, Oficio y Memoria</title>
+<title>COMENSAL — Nutrición y Memoria</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -94,6 +94,7 @@
   .btn-primary::before { content: ''; position: absolute; top: 50%; left: 50%; width: 0; height: 0; background: rgba(255,255,255,0.08); border-radius: 50%; transform: translate(-50%, -50%); transition: width 0.6s ease, height 0.6s ease; }
   .btn-primary:hover::before { width: 300px; height: 300px; }
   .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px var(--shadow-strong); }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
   .btn-secondary { position: relative; overflow: hidden; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); border-color: var(--ink); color: var(--ink); }
   .btn-secondary:hover { background: var(--ink); color: var(--paper); transform: translateY(-2px); box-shadow: 0 8px 24px var(--shadow-strong); }
   .quote-block { position: relative; }
@@ -130,6 +131,8 @@
   body::-webkit-scrollbar-thumb { background: var(--sand); border-radius: 3px; }
   body::-webkit-scrollbar-thumb:hover { background: var(--terracotta); }
   .toast { background: var(--ink); color: var(--paper); }
+  .form-loading { animation: pulse 1.5s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
   @media (max-width: 768px) { .cursor-dot { display: none; } }
 </style>
 <base target="_blank">
@@ -384,11 +387,17 @@
         <div class="section-number mb-4">04 — Contacto</div>
         <h2 class="font-display italic text-4xl md:text-5xl mb-4 leading-tight" style="color: var(--ink);">Hablemos</h2>
         <p class="font-body text-sm mb-10 leading-[1.8] max-w-md" style="color: var(--ink-muted);">¿Querés coordinar un taller, una charla o simplemente sentarte a conversar? La mesa está servida.</p>
-        <form class="space-y-5" onsubmit="event.preventDefault(); showToast('Mensaje enviado. Gracias por escribir.');">
-          <div class="reveal"><input type="text" placeholder="Nombre" required class="w-full px-5 py-4 rounded-xl font-body text-sm placeholder-opacity-60 transition-all border"></div>
-          <div class="reveal"><input type="email" placeholder="Email" required class="w-full px-5 py-4 rounded-xl font-body text-sm placeholder-opacity-60 transition-all border"></div>
+
+        <!-- Formspree form -->
+        <form id="contactForm" action="https://formspree.io/f/xnqevwpy" method="POST" class="space-y-5">
           <div class="reveal">
-            <select class="w-full px-5 py-4 rounded-xl font-body text-sm transition-all cursor-pointer appearance-none border opacity-80">
+            <input type="text" name="nombre" placeholder="Nombre" required class="w-full px-5 py-4 rounded-xl font-body text-sm placeholder-opacity-60 transition-all border">
+          </div>
+          <div class="reveal">
+            <input type="email" name="email" placeholder="Email" required class="w-full px-5 py-4 rounded-xl font-body text-sm placeholder-opacity-60 transition-all border">
+          </div>
+          <div class="reveal">
+            <select name="asunto" class="w-full px-5 py-4 rounded-xl font-body text-sm transition-all cursor-pointer appearance-none border opacity-80">
               <option value="" disabled selected>¿Sobre qué querés hablar?</option>
               <option value="individual">Consulta individual</option>
               <option value="grupal">Taller o encuentro grupal</option>
@@ -397,28 +406,39 @@
               <option value="otro">Otro</option>
             </select>
           </div>
-          <div class="reveal"><textarea placeholder="Tu mensaje..." rows="5" required class="w-full px-5 py-4 rounded-xl font-body text-sm placeholder-opacity-60 transition-all resize-none border"></textarea></div>
-          <div class="reveal pt-2"><button type="submit" class="btn-primary font-body text-[0.7rem] uppercase tracking-[2.5px] px-10 py-4 rounded-full relative z-10">Enviar mensaje</button></div>
+          <div class="reveal">
+            <textarea name="mensaje" placeholder="Tu mensaje..." rows="5" required class="w-full px-5 py-4 rounded-xl font-body text-sm placeholder-opacity-60 transition-all resize-none border"></textarea>
+          </div>
+          <!-- Anti-spam honeypot -->
+          <input type="text" name="_gotcha" style="display:none">
+          <!-- Redirect after submit -->
+          <input type="hidden" name="_next" value="https://diegalbe.github.io/comensal-site/#contacto">
+          <div class="reveal pt-2">
+            <button type="submit" id="submitBtn" class="btn-primary font-body text-[0.7rem] uppercase tracking-[2.5px] px-10 py-4 rounded-full relative z-10">Enviar mensaje</button>
+          </div>
         </form>
       </div>
       <div class="md:w-80 flex-shrink-0">
         <div class="rounded-2xl p-10 h-full border relative overflow-hidden" style="background: linear-gradient(135deg, var(--sand-muted) 0%, var(--paper) 100%); border-color: var(--sand-light);">
           <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-terracotta to-transparent opacity-30"></div>
           <div class="font-body text-[0.6rem] uppercase tracking-[3px] mb-10" style="color: var(--terracotta);">Canales Directos</div>
-          <div class="mb-10 group cursor-pointer">
+
+          <div class="mb-10 group">
             <div class="flex items-center gap-3 mb-2"><span class="text-xl">💬</span><div class="font-body text-sm font-medium" style="color: var(--ink);">WhatsApp</div></div>
             <p class="font-body text-xs leading-[1.7] mb-2 pl-9" style="color: var(--ink-muted);">Escritura directa, respuesta en el día.</p>
-            <a href="https://wa.me/5491111111111" target="_blank" class="font-body text-xs link-animated inline-block pl-9" style="color: var(--terracotta);">Abrir chat →</a>
+            <a href="https://wa.me/5493442642753?text=Hola%20Diego,%20te%20contacto%20desde%20COMENSAL.%20" target="_blank" class="font-body text-xs link-animated inline-block pl-9" style="color: var(--terracotta);">Abrir chat →</a>
           </div>
-          <div class="mb-10 group cursor-pointer">
+
+          <div class="mb-10 group">
             <div class="flex items-center gap-3 mb-2"><span class="text-xl">✉️</span><div class="font-body text-sm font-medium" style="color: var(--ink);">Email</div></div>
             <p class="font-body text-xs leading-[1.7] mb-2 pl-9" style="color: var(--ink-muted);">Para propuestas institucionales y colaboraciones.</p>
-            <a href="mailto:hola@comensal.ar" class="font-body text-xs link-animated inline-block pl-9" style="color: var(--terracotta);">hola@comensal.ar →</a>
+            <a href="mailto:Dalbeira09@gmail.com" class="font-body text-xs link-animated inline-block pl-9" style="color: var(--terracotta);">Dalbeira09@gmail.com →</a>
           </div>
-          <div class="group cursor-pointer">
+
+          <div class="group">
             <div class="flex items-center gap-3 mb-2"><span class="text-xl">📷</span><div class="font-body text-sm font-medium" style="color: var(--ink);">Instagram</div></div>
             <p class="font-body text-xs leading-[1.7] mb-2 pl-9" style="color: var(--ink-muted);">El día a día de la bitácora.</p>
-            <a href="https://instagram.com/comensal.ar" target="_blank" class="font-body text-xs link-animated inline-block pl-9" style="color: var(--terracotta);">@comensal.ar →</a>
+            <a href="https://instagram.com/diegalbe" target="_blank" class="font-body text-xs link-animated inline-block pl-9" style="color: var(--terracotta);">@diegalbe →</a>
           </div>
         </div>
       </div>
@@ -540,6 +560,38 @@
       toast.classList.remove('opacity-100', 'translate-y-0');
     }, 3000);
   }
+
+  // Formspree form handling
+  const contactForm = document.getElementById('contactForm');
+  const submitBtn = document.getElementById('submitBtn');
+
+  contactForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Enviando...';
+    submitBtn.classList.add('form-loading');
+
+    try {
+      const response = await fetch(contactForm.action, {
+        method: 'POST',
+        body: new FormData(contactForm),
+        headers: { 'Accept': 'application/json' }
+      });
+
+      if (response.ok) {
+        showToast('Mensaje enviado. Gracias por escribir.');
+        contactForm.reset();
+      } else {
+        showToast('Hubo un error. Intentá de nuevo.');
+      }
+    } catch (error) {
+      showToast('Hubo un error de conexión. Intentá de nuevo.');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Enviar mensaje';
+      submitBtn.classList.remove('form-loading');
+    }
+  });
 
   // Smooth scroll
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
